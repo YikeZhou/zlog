@@ -1,7 +1,7 @@
 ---
 title: "Pacman 常用命令"
 date: 2022-01-27T12:00:00+08:00
-lastmod: 2022-09-15T18:57:57+08:00
+lastmod: 2022-01-27T12:00:00+08:00
 draft: false
 keywords: ["Linux", "Pacman"]
 description: "Pacman 是 Arch Linux / Manjaro 默认的包管理器"

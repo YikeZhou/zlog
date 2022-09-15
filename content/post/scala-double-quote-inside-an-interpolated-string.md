@@ -1,7 +1,7 @@
 ---
 title: "Scala 字符串插值器不支持转义双引号"
 date: 2021-03-19T12:00:00+08:00
-lastmod: 2022-09-14T21:04:06+08:00
+lastmod: 2021-03-19T12:00:00+08:00
 draft: false
 keywords: ["Scala"]
 description: "关于 Scala 的字符串插值器 s 为什么不支持转义双引号 `\"` 的调查"

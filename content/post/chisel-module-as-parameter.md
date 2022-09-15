@@ -1,7 +1,7 @@
 ---
 title: "将 Chisel Module 作为类参数"
 date: 2021-08-22T12:00:00+08:00
-lastmod: 2022-09-15T18:31:49+08:00
+lastmod: 2021-08-22T12:00:00+08:00
 draft: false
 keywords: ["Chisel", "Scala"]
 description: "在 Chisel 里使用 `Module` 作为生成另一个 `Module` 的参数"
