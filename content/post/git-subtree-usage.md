@@ -44,6 +44,8 @@ sequenceDiagrams:
 git subtree 与 submodule 相比，不会创建新的 metadata 文件（.gitmodule 等），而且其它的 git repo 使用者不会发现使用 subtree 的痕迹。
 git clone 的时候，所有的依赖都会一起被 clone 下来。所以用它来管理一个项目的依赖非常地方便。
 
+{{% figure class="center" src="https://www.repstatic.it/content/localirep/img/rep-torino/2016/10/07/112008349-c2daced1-20ee-487c-98a2-ffa26fc2b400.jpg" title="double tree of Casorzo" alt="granadoubletree.jpg" %}}
+
 ## tl;dr
 
 - 添加：下面的命令把 remote repo 添加到指定目录下，并自动 commit
