@@ -1,0 +1,258 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><title>基于 Yosys 的形式化验证入门 - zlog - zyk's blog</title><meta name=renderer content="webkit"><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><meta name=theme-color content="#f8f5ec"><meta name=msapplication-navbutton-color content="#f8f5ec"><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec"><meta name=author content="Yike Zhou"><meta name=description content="使用 Yosys/SymbiYosys 进行形式化验证的实例"><meta name=keywords content="Yosys"><meta name=generator content="Hugo 0.103.1 with theme even"><link rel=canonical href=https://yikezhou.github.io/zlog/post/intro-to-formal-verification-with-yosys/><link rel=apple-touch-icon sizes=180x180 href=/zlog/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/zlog/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/zlog/favicon-16x16.png><link rel=manifest href=/zlog/manifest.json><link rel=mask-icon href=/zlog/safari-pinned-tab.svg color=#5bbad5><link href=/zlog/sass/main.min.b874a8796a492f0d7c86bb24c33cbf052935783a5778ebaf819a8e514bf49f10.css rel=stylesheet><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin=anonymous><meta property="og:title" content="基于 Yosys 的形式化验证入门"><meta property="og:description" content="使用 Yosys/SymbiYosys 进行形式化验证的实例"><meta property="og:type" content="article"><meta property="og:url" content="https://yikezhou.github.io/zlog/post/intro-to-formal-verification-with-yosys/"><meta property="article:section" content="post"><meta property="article:published_time" content="2022-09-15T10:46:29+08:00"><meta property="article:modified_time" content="2022-09-16T10:00:00+08:00"><meta itemprop=name content="基于 Yosys 的形式化验证入门"><meta itemprop=description content="使用 Yosys/SymbiYosys 进行形式化验证的实例"><meta itemprop=datePublished content="2022-09-15T10:46:29+08:00"><meta itemprop=dateModified content="2022-09-16T10:00:00+08:00"><meta itemprop=wordCount content="2280"><meta itemprop=keywords content="Yosys,形式化验证,"><meta name=twitter:card content="summary"><meta name=twitter:title content="基于 Yosys 的形式化验证入门"><meta name=twitter:description content="使用 Yosys/SymbiYosys 进行形式化验证的实例"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]--></head><body><div id=mobile-navbar class=mobile-navbar><div class=mobile-header-logo><a href=/ class=logo>zlog</a></div><div class=mobile-navbar-icon><span></span>
+<span></span>
+<span></span></div></div><nav id=mobile-menu class="mobile-menu slideout-menu"><ul class=mobile-menu-list><a href=/zlog/><li class=mobile-menu-item>Home</li></a><a href=/zlog/post/><li class=mobile-menu-item>Archives</li></a><a href=/zlog/tags/><li class=mobile-menu-item>Tags</li></a><a href=/zlog/categories/><li class=mobile-menu-item>Categories</li></a></ul></nav><div class=container id=mobile-panel><header id=header class=header><div class=logo-wrapper><a href=/ class=logo>zlog</a></div><nav class=site-navbar><ul id=menu class=menu><li class=menu-item><a class=menu-item-link href=/zlog/>Home</a></li><li class=menu-item><a class=menu-item-link href=/zlog/post/>Archives</a></li><li class=menu-item><a class=menu-item-link href=/zlog/tags/>Tags</a></li><li class=menu-item><a class=menu-item-link href=/zlog/categories/>Categories</a></li></ul></nav></header><main id=main class=main><div class=content-wrapper><div id=content class=content><article class=post><header class=post-header><h1 class=post-title>基于 Yosys 的形式化验证入门</h1><div class=post-meta><span class=post-time>2022-09-15</span><div class=post-category><a href=/zlog/categories/%E7%BC%96%E7%A8%8B/>编程</a></div><span class=more-meta>约 2280 字</span>
+<span class=more-meta>预计阅读 5 分钟</span></div></header><div class=post-toc id=post-toc><h2 class=post-toc-title>文章目录</h2><div class=post-toc-content><nav id=TableOfContents><ul><li><ul><li><a href=#motivating-example>Motivating Example</a></li><li><a href=#使用-symbiyosys-进行验证>使用 SymbiYosys 进行验证</a></li><li><a href=#参考资料>参考资料</a></li></ul></li></ul></nav></div></div><div class=post-content><p><a href=https://yosyshq.net/yosys/about.html>Yosys</a> 是一个开源的 Verilog HDL 综合工具包。它支持将电路的状态转换编码为 <a href=https://smtlib.cs.uiowa.edu/>SMT-LIBv2</a> 中的函数。由此出发，可以对电路进行一系列形式化验证。</p><div class="admonition info"><p class=admonition-title>注意</p><p>本文仅对相关工具的一般使用方法进行介绍，不涉及验证原理、算法分析等内容。</p><p>本文讨论的内容均为 Assertion Based Verification (ABV)，除此之外 Yosys 还支持 Symbolic Model Checking、Formal Equivalence Checking，相关用法有待进一步整理。</p></div><h2 id=motivating-example>Motivating Example</h2><p><code>test.v</code> 定义了一个简单的时序逻辑电路（此示例电路来自 Yosys Command Reference Manual），它只有输出，没有输入。它的输出可以理解为一个数列 $y_{n+1}=\text{or}(\text{shl}(y_n),\text{neg}(y_n))$，首项 $y_0$ 的值是电路的初始状态。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-verilog data-lang=verilog><span class=line><span class=cl><span class=k>module</span> <span class=n>test</span><span class=p>(</span><span class=k>input</span> <span class=n>clk</span><span class=p>,</span> <span class=k>output</span> <span class=kt>reg</span> <span class=p>[</span><span class=mh>3</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>y</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>always</span> <span class=p>@(</span><span class=k>posedge</span> <span class=n>clk</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>y</span> <span class=o>&lt;=</span> <span class=p>(</span><span class=n>y</span> <span class=o>&lt;&lt;</span> <span class=mh>1</span><span class=p>)</span> <span class=o>|</span> <span class=o>^</span><span class=n>y</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>endmodule</span>
+</span></span></code></pre></td></tr></table></div></div><p>我们的目标是验证输出 <code>y</code> 的值不可能从一个<strong>非零值</strong>变为一个<strong>零值</strong>。为了验证该性质，需要将其写为 SMT-LIBv2 表达式，交给 SMT solver 求解。因此，首先需要明白编码电路的方式。</p><p>使用以下综合脚本（synthesis script）<code>test.ys</code> 指示 Yosys 对电路进行变换，得到 <code>test.smt2</code> 文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl><span class=c1># Read Verilog source file and convert to internal representation.</span>
+</span></span><span class=line><span class=cl>read_verilog test.v
+</span></span><span class=line><span class=cl><span class=c1># Elaborate the design hierarchy.</span>
+</span></span><span class=line><span class=cl><span class=c1># Should always be the first command after reading the design.</span>
+</span></span><span class=line><span class=cl>hierarchy -check -top <span class=nb>test</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Convert “processes” (the internal representation of behavioral Verilog code)</span>
+</span></span><span class=line><span class=cl><span class=c1># into multiplexers and registers.</span>
+</span></span><span class=line><span class=cl>proc
+</span></span><span class=line><span class=cl><span class=c1># Perform some basic optimizations and cleanups.</span>
+</span></span><span class=line><span class=cl>opt
+</span></span><span class=line><span class=cl><span class=c1># Check for obvious problems in the design.</span>
+</span></span><span class=line><span class=cl>check -assert
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Write a SMT-LIBv2 description of the current design.</span>
+</span></span><span class=line><span class=cl>write_smt2 test.smt2
+</span></span></code></pre></td></tr></table></div></div><div class="admonition note"><p class=admonition-title>理解 synthesis script</p><p>以上脚本包含了3种类型的指令：</p><ul><li><strong>Frontends</strong>（前端）：从文件中读取输入（一般为 Verilog 代码）</li><li><strong>Passes</strong>（“趟”）：在电路上应用等价变换</li><li><strong>Backends</strong>（后端）：将处理后的电路输出到文件（支持不同的格式，如 Verilog, BLIF, EDIF, SPICE, BTOR 等）</li></ul><p>这也是所有典型的 Yosys synthesis script 都具有的结构，由此可见综合的过程与编译的过程非常相似。事实上，Yosys 定义了一种电路的中间表示格式 RTLIL (RTL Intermediate Language)，所有的 Passes 都是在以此 IR 表示的抽象语法树（AST）上实现的。</p></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>$ yosys test.ys
+</span></span></code></pre></td></tr></table></div></div><p>Yosys 输出的文件如下。此文件中定义了一个对应电路状态的类型 <code>|&lt;mod>_s|</code>；电路中的输入（input）、输出（output）、寄存器（register）、线路（wire）都有各自对应的函数，这些函数名为 <code>|&lt;mod>_n &lt;wirename>|</code>，它们接受一个电路状态作为输入，返回 Bool 类型或 BitVec 类型，对应具体的值。另外一个重要的函数为 <code>|&lt;mod>_t|</code>，它接受两个状态 state, next_state 作为输入，当两者之间存在状态转换关系时，则返回 True，反之则返回 False。它们组合起来编码了电路的行为。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text><span class=line><span class=cl>; SMT-LIBv2 description generated by Yosys 0.21+7 (git sha1 d98738db5, clang 10.0.0-4ubuntu1 -fPIC -Os)
+</span></span><span class=line><span class=cl>; yosys-smt2-module test
+</span></span><span class=line><span class=cl>(declare-sort |test_s| 0)
+</span></span><span class=line><span class=cl>(declare-fun |test_is| (|test_s|) Bool)
+</span></span><span class=line><span class=cl>(declare-fun |test#0| (|test_s|) Bool) ; \clk
+</span></span><span class=line><span class=cl>; yosys-smt2-input clk 1
+</span></span><span class=line><span class=cl>; yosys-smt2-clock clk posedge
+</span></span><span class=line><span class=cl>; yosys-smt2-witness {&#34;offset&#34;: 0, &#34;path&#34;: [&#34;\\clk&#34;], &#34;smtname&#34;: &#34;clk&#34;, &#34;type&#34;: &#34;posedge&#34;, &#34;width&#34;: 1}
+</span></span><span class=line><span class=cl>; yosys-smt2-witness {&#34;offset&#34;: 0, &#34;path&#34;: [&#34;\\clk&#34;], &#34;smtname&#34;: &#34;clk&#34;, &#34;type&#34;: &#34;input&#34;, &#34;width&#34;: 1}
+</span></span><span class=line><span class=cl>(define-fun |test_n clk| ((state |test_s|)) Bool (|test#0| state))
+</span></span><span class=line><span class=cl>; yosys-smt2-witness {&#34;offset&#34;: 0, &#34;path&#34;: [&#34;\\y&#34;], &#34;smtname&#34;: 1, &#34;type&#34;: &#34;reg&#34;, &#34;width&#34;: 4}
+</span></span><span class=line><span class=cl>(declare-fun |test#1| (|test_s|) (_ BitVec 4)) ; \y
+</span></span><span class=line><span class=cl>; yosys-smt2-output y 4
+</span></span><span class=line><span class=cl>; yosys-smt2-register y 4
+</span></span><span class=line><span class=cl>(define-fun |test_n y| ((state |test_s|)) (_ BitVec 4) (|test#1| state))
+</span></span><span class=line><span class=cl>(define-fun |test#2| ((state |test_s|)) Bool (xor  (= ((_ extract 0 0) (|test#1| state)) #b1) (= ((_ extract 1 1) (|test#1| state)) #b1) (= ((_ extract 2 2) (|test#1| state)) #b1) (= ((_ extract 3 3) (|test#1| state)) #b1))) ; $reduce_xor$test.v:3$3_Y
+</span></span><span class=line><span class=cl>(define-fun |test#3| ((state |test_s|)) (_ BitVec 4) (bvor (concat ((_ extract 2 0) (|test#1| state)) #b0) (concat #b000 (ite (|test#2| state) #b1 #b0)))) ; $0\y[3:0]
+</span></span><span class=line><span class=cl>(define-fun |test_a| ((state |test_s|)) Bool true)
+</span></span><span class=line><span class=cl>(define-fun |test_u| ((state |test_s|)) Bool true)
+</span></span><span class=line><span class=cl>(define-fun |test_i| ((state |test_s|)) Bool true)
+</span></span><span class=line><span class=cl>(define-fun |test_h| ((state |test_s|)) Bool true)
+</span></span><span class=line><span class=cl>(define-fun |test_t| ((state |test_s|) (next_state |test_s|)) Bool
+</span></span><span class=line><span class=cl>  (= (|test#3| state) (|test#1| next_state)) ; $procdff$5 \y
+</span></span><span class=line><span class=cl>) ; end of module test
+</span></span><span class=line><span class=cl>; yosys-smt2-topmod test
+</span></span><span class=line><span class=cl>; end of yosys output
+</span></span></code></pre></td></tr></table></div></div><p>现在，为了表示上述性质，可以定义两个状态 s1, s2，它们满足：</p><ol><li>s1 到 s2 存在状态转换关系</li><li>s1 中 <code>y != 0</code></li><li>s2 中 <code>y == 0</code></li></ol><p>之后交给 SMT solver 验证其可满足性，若不能满足，则验证了不存在这样的情况。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text><span class=line><span class=cl>; we need QF_UFBV for this proof
+</span></span><span class=line><span class=cl>(set-logic QF_UFBV)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>; insert the auto-generated code here
+</span></span><span class=line><span class=cl>%%
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>; declare two state variables s1 and s2
+</span></span><span class=line><span class=cl>(declare-fun s1 () test_s)
+</span></span><span class=line><span class=cl>(declare-fun s2 () test_s)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>; state s2 is the successor of state s1
+</span></span><span class=line><span class=cl>(assert (test_t s1 s2))
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>; we are looking for a model with y non-zero in s1
+</span></span><span class=line><span class=cl>(assert (distinct (|test_n y| s1) #b0000))
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>; we are looking for a model with y zero in s2
+</span></span><span class=line><span class=cl>(assert (= (|test_n y| s2) #b0000))
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>; is there such a model?
+</span></span><span class=line><span class=cl>(check-sat)
+</span></span></code></pre></td></tr></table></div></div><p>将上面的 <code>test.ys</code> 最后一行修改为：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sh data-lang=sh><span class=line><span class=cl>write_smt2 -tpl test.tpl test.smt2
+</span></span></code></pre></td></tr></table></div></div><p>新的输出文件中包含了模版文件 <code>test.tpl</code> 的内容，并将其中的 <code>%%</code> 替换为了原本 <code>write_smt2</code> 命令的输出，可以将它作为 SMT solver 的输入。</p><p>例如，调用 <a href=https://github.com/Z3Prover/z3>z3</a> 进行求解，得到 unsat 的结果。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>$ z3 test.smt2
+</span></span><span class=line><span class=cl>unsat
+</span></span></code></pre></td></tr></table></div></div><h2 id=使用-symbiyosys-进行验证>使用 SymbiYosys 进行验证</h2><p>上一节介绍的方法需要用户理解 <code>write_smt2</code> 命令的输出，并直接使用其中定义的函数，才能将需要验证的性质编写为 SMT-LIBv2 格式的表达式，这样不免有些繁琐。Yosys 还提供了 <a href=https://yosyshq.readthedocs.io/projects/sby/en/latest/>SymbiYosys (sby)</a> 工具，它可以理解为一个前端驱动程序（front-end driver program），支持解析用户在源文件中定义的断言（assertions），直接尝试进行证明。</p><p>来看另一个例子，下面是用 System Verilog 定义的一个计数器（此示例代码来自参考资料中 Formal Verification of RISC-V cores with riscv-formal 这一幻灯片的第3~4页）。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-SystemVerilog data-lang=SystemVerilog><span class=line><span class=cl><span class=k>module</span> <span class=n>hello</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span> <span class=n>clk</span><span class=p>,</span> <span class=n>rst</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>output</span> <span class=p>[</span><span class=mh>3</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>cnt</span>
+</span></span><span class=line><span class=cl><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>reg</span> <span class=p>[</span><span class=mh>3</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>cnt</span> <span class=o>=</span> <span class=mh>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>always</span> <span class=p>@(</span><span class=k>posedge</span> <span class=n>clk</span><span class=p>)</span> <span class=k>begin</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=p>(</span><span class=n>rst</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>      <span class=n>cnt</span> <span class=o>&lt;=</span> <span class=mh>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>else</span>
+</span></span><span class=line><span class=cl>      <span class=n>cnt</span> <span class=o>&lt;=</span> <span class=n>cnt</span> <span class=o>+</span> <span class=mh>1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>end</span>
+</span></span><span class=line><span class=cl><span class=k>endmodule</span>
+</span></span></code></pre></td></tr></table></div></div><p>现在来定义此电路需要满足的性质。首先用1个 <code>assume</code> 语句表明验证的前提（也就是在求解器考虑的所有情形中，此性质都得到满足）；<code>assert</code> 语句则是求解器需要证明的性质。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-SystemVerilog data-lang=SystemVerilog><span class=line><span class=cl><span class=k>module</span> <span class=n>hello</span> <span class=p>(</span><span class=cm>/* ... */</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=cm>/* ... */</span>
+</span></span><span class=line><span class=cl><span class=no>`ifdef</span> <span class=n>FORMAL</span>
+</span></span><span class=line><span class=cl>  <span class=k>always</span> <span class=p>@</span><span class=o>*</span> <span class=k>assume</span> <span class=p>(</span><span class=n>cnt</span> <span class=o>!=</span> <span class=mh>10</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>always</span> <span class=p>@</span><span class=o>*</span> <span class=k>assert</span> <span class=p>(</span><span class=n>cnt</span> <span class=o>!=</span> <span class=mh>15</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=no>`endif</span>
+</span></span><span class=line><span class=cl><span class=k>endmodule</span>
+</span></span></code></pre></td></tr></table></div></div><p>SymbiYosys 使用一个 <code>.sby</code> 文件来描述验证过程中执行的任务，文件中包含若干个节（section），每个节由方括号括起的小标题表示。下面的文件中，<code>[options]</code> 节将证明模式设置为“使用 Unbounded model check 验证 safety properties”，并且将 k-induction 的深度设置为10；<code>[script]</code> 中是处理输入文件用到的 Yosys 命令；输入文件列在 <code>[files]</code> 节中。关于 <code>.sby</code> 文件语法的更多信息请参考 <a href=https://yosyshq.readthedocs.io/projects/sby/en/latest/reference.html>Reference for .sby file format</a>，这里并不展开说明。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>[options]
+</span></span><span class=line><span class=cl>mode prove
+</span></span><span class=line><span class=cl>depth 10
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[engines]
+</span></span><span class=line><span class=cl>smtbmc z3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[script]
+</span></span><span class=line><span class=cl>read_verilog -formal hello.sv
+</span></span><span class=line><span class=cl>prep -top hello
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>[files]
+</span></span><span class=line><span class=cl>hello.sv
+</span></span></code></pre></td></tr></table></div></div><p>将上面的两个文件放在同一目录下，然后调用 <code>sby</code> 程序，即可获得证明结果。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>$ sby -f hello.sby
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> engine_0.induction: finished <span class=o>(</span><span class=nv>returncode</span><span class=o>=</span>0<span class=o>)</span>
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> engine_0: Status returned by engine <span class=k>for</span> induction: pass
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> engine_0.basecase: finished <span class=o>(</span><span class=nv>returncode</span><span class=o>=</span>0<span class=o>)</span>
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> engine_0: Status returned by engine <span class=k>for</span> basecase: pass
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> summary: Elapsed clock <span class=nb>time</span> <span class=o>[</span>H:MM:SS <span class=o>(</span>secs<span class=o>)]</span>: 0:00:00 <span class=o>(</span>0<span class=o>)</span>
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> summary: Elapsed process <span class=nb>time</span> <span class=o>[</span>H:MM:SS <span class=o>(</span>secs<span class=o>)]</span>: 0:00:00 <span class=o>(</span>0<span class=o>)</span>
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> summary: engine_0 <span class=o>(</span>smtbmc z3<span class=o>)</span> returned pass <span class=k>for</span> induction
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> summary: engine_0 <span class=o>(</span>smtbmc z3<span class=o>)</span> returned pass <span class=k>for</span> basecase
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> summary: successful proof by k-induction.
+</span></span><span class=line><span class=cl>SBY 19:06:39 <span class=o>[</span>hello<span class=o>]</span> DONE <span class=o>(</span>PASS, <span class=nv>rc</span><span class=o>=</span>0<span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=参考资料>参考资料</h2><ul><li><a href=https://yosyshq.readthedocs.io/en/latest/>YosysHQ Documentation Library</a></li><li>Slides by <a href=http://bygone.clairexen.net/>Clifford Wolf</a>:<ul><li><a href=http://bygone.clairexen.net/yosys/files/yosys_presentation.pdf>Yosys Open SYnthesis Suite</a></li><li><a href=https://riscv.org/wp-content/uploads/2018/12/13.30-Humbenberger-Wolf-Formal-Verification-of-RISC-V-processor-implementations.pdf>Formal Verification of RISC-V cores with riscv-formal</a></li></ul></li></ul></div><div class=post-copyright><p class=copyright-item><span class=item-title>文章作者</span>
+<span class=item-content>Yike Zhou</span></p><p class=copyright-item><span class=item-title>上次更新</span>
+<span class=item-content>2022-09-16</span></p><p class=copyright-item><span class=item-title>许可协议</span>
+<span class=item-content><a rel=license href=http://creativecommons.org/licenses/by-nc-sa/4.0/><img alt=知识共享许可协议 style=border-width:0 src=https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png></a>&nbsp;<a rel=license href=http://creativecommons.org/licenses/by-nc-sa/4.0/>知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a></span></p></div><footer class=post-footer><div class=post-tags><a href=/zlog/tags/yosys/>Yosys</a>
+<a href=/zlog/tags/%E5%BD%A2%E5%BC%8F%E5%8C%96%E9%AA%8C%E8%AF%81/>形式化验证</a></div><nav class=post-nav><a class=next href=/zlog/post/git-subtree-usage/><span class="next-text nav-default">Git Subtree 简单使用</span>
+<span class="next-text nav-mobile">下一篇</span>
+<i class="iconfont icon-right"></i></a></nav></footer></article></div></div></main><footer id=footer class=footer><div class=social-links><a href=https://github.com/YikeZhou class="iconfont icon-github" title=github></a>
+<a href=https://yikezhou.github.io/zlog/index.xml type=application/rss+xml class="iconfont icon-rss" title=rss></a></div><div class=copyright><span class=power-by>由 <a class=hexo-link href=https://gohugo.io>Hugo</a> 强力驱动</span>
+<span class=division>|</span>
+<span class=theme-info>主题 -
+<a class=theme-link href=https://github.com/olOwOlo/hugo-theme-even>Even</a></span>
+<span class=copyright-year>&copy;
+2020 -
+2022<span class=heart><i class="iconfont icon-heart"></i></span><span>Yike Zhou</span></span></div></footer><div class=back-to-top id=back-to-top><i class="iconfont icon-up"></i></div></div><script src=https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.min.js integrity="sha256-jwCP0NAdCBloaIWTWHmW4i3snUNMHUNO+jr9rYd2iOI=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.locales.min.js integrity="sha256-ZwofwC1Lf/faQCzN7nZtfijVV6hSwxjQMwXL4gn9qU8=" crossorigin=anonymous></script>
+<script>var languageCode="en".replace(/-/g,"_").replace(/_(.*)/,function(e,t){return e.replace(t,t.toUpperCase())});timeago().render(document.querySelectorAll(".timeago"),languageCode),timeago.cancel()</script><script type=text/javascript src=/zlog/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js></script>
+<script type=text/javascript>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]]}}</script><script async src=https://cdn.jsdelivr.net/npm/mathjax@3.0.5/es5/tex-mml-chtml.js integrity="sha256-HGLuEfFcsUJGhvB8cQ8nr0gai9EucOOaIxFw7qxmd+w=" crossorigin=anonymous></script></body></html>
