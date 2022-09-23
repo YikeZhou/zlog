@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://yikezhou.github.io/zlog/sitemap.xml

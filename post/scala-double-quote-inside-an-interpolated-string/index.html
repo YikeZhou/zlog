@@ -1,0 +1,107 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><title>Scala 字符串插值器不支持转义双引号 - zlog - zyk's blog</title><meta name=renderer content="webkit"><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><meta name=theme-color content="#f8f5ec"><meta name=msapplication-navbutton-color content="#f8f5ec"><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec"><meta name=author content="Yike Zhou"><meta name=description content="关于 Scala 的字符串插值器 s 为什么不支持转义双引号 `&#34;` 的调查"><meta name=keywords content="Scala"><meta name=generator content="Hugo 0.103.1 with theme even"><link rel=canonical href=https://yikezhou.github.io/zlog/post/scala-double-quote-inside-an-interpolated-string/><link rel=apple-touch-icon sizes=180x180 href=/zlog/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/zlog/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/zlog/favicon-16x16.png><link rel=manifest href=/zlog/manifest.json><link rel=mask-icon href=/zlog/safari-pinned-tab.svg color=#5bbad5><link href=/zlog/sass/main.min.b874a8796a492f0d7c86bb24c33cbf052935783a5778ebaf819a8e514bf49f10.css rel=stylesheet><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin=anonymous><meta property="og:title" content="Scala 字符串插值器不支持转义双引号"><meta property="og:description" content="关于 Scala 的字符串插值器 s 为什么不支持转义双引号 `&#34;` 的调查"><meta property="og:type" content="article"><meta property="og:url" content="https://yikezhou.github.io/zlog/post/scala-double-quote-inside-an-interpolated-string/"><meta property="article:section" content="post"><meta property="article:published_time" content="2021-03-19T12:00:00+08:00"><meta property="article:modified_time" content="2021-03-19T12:00:00+08:00"><meta itemprop=name content="Scala 字符串插值器不支持转义双引号"><meta itemprop=description content="关于 Scala 的字符串插值器 s 为什么不支持转义双引号 `&#34;` 的调查"><meta itemprop=datePublished content="2021-03-19T12:00:00+08:00"><meta itemprop=dateModified content="2021-03-19T12:00:00+08:00"><meta itemprop=wordCount content="963"><meta itemprop=keywords content="Scala,"><meta name=twitter:card content="summary"><meta name=twitter:title content="Scala 字符串插值器不支持转义双引号"><meta name=twitter:description content="关于 Scala 的字符串插值器 s 为什么不支持转义双引号 `&#34;` 的调查"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]--></head><body><div id=mobile-navbar class=mobile-navbar><div class=mobile-header-logo><a href=/ class=logo>zlog</a></div><div class=mobile-navbar-icon><span></span>
+<span></span>
+<span></span></div></div><nav id=mobile-menu class="mobile-menu slideout-menu"><ul class=mobile-menu-list><a href=/zlog/><li class=mobile-menu-item>Home</li></a><a href=/zlog/post/><li class=mobile-menu-item>Archives</li></a><a href=/zlog/tags/><li class=mobile-menu-item>Tags</li></a><a href=/zlog/categories/><li class=mobile-menu-item>Categories</li></a></ul></nav><div class=container id=mobile-panel><header id=header class=header><div class=logo-wrapper><a href=/ class=logo>zlog</a></div><nav class=site-navbar><ul id=menu class=menu><li class=menu-item><a class=menu-item-link href=/zlog/>Home</a></li><li class=menu-item><a class=menu-item-link href=/zlog/post/>Archives</a></li><li class=menu-item><a class=menu-item-link href=/zlog/tags/>Tags</a></li><li class=menu-item><a class=menu-item-link href=/zlog/categories/>Categories</a></li></ul></nav></header><main id=main class=main><div class=content-wrapper><div id=content class=content><article class=post><header class=post-header><h1 class=post-title>Scala 字符串插值器不支持转义双引号</h1><div class=post-meta><span class=post-time>2021-03-19</span><div class=post-category><a href=/zlog/categories/%E7%BC%96%E7%A8%8B/>编程</a></div><span class=more-meta>约 963 字</span>
+<span class=more-meta>预计阅读 2 分钟</span></div></header><div class=post-toc id=post-toc><h2 class=post-toc-title>文章目录</h2><div class=post-toc-content><nav id=TableOfContents><ul><li><ul><li><a href=#tldr>tl;dr</a></li><li><a href=#引号导致的其它问题>引号导致的其它问题</a></li><li><a href=#rtfm>RTFM</a></li><li><a href=#参考资料>参考资料</a></li></ul></li></ul></nav></div></div><div class=post-outdated><div class=warn><p>【注意】最后更新于 <span class=timeago datetime=2021-03-19T12:00:00 title="March 19, 2021">March 19, 2021</span>，文中内容可能已过时，请谨慎使用。</p></div></div><div class=post-content><p>用 <code>\"</code> 在字符串中插入双引号时，出现语法错误：<code>; expected but string constant found</code>。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// good
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=s>s&#34;color=</span><span class=si>$color</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1>// bad!!!
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=s>s&#34;color=\&#34;</span><span class=si>$color\</span><span class=s>&#34;</span><span class=err>&#34;</span>  <span class=c1>// &lt;- notice this weird syntax highlight
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=tldr>tl;dr</h2><p>这不是 bug 而是 <strong>feature</strong> ！（至少是<a href=https://groups.google.com/d/topic/scala-sips/d2K23f__6b0/discussion>明确 won&rsquo;t fix</a> 的 bug）</p><div class="admonition tip"><p class=admonition-title>冷知识</p><ul><li>形如 <code>"..."</code> 的字符串字面量（加上转义字符）可以表示所有的字符串</li><li>形如 <code>"""..."""</code> 的字符串不能表示 <code>"""</code></li><li>使用插值器之后，形如 <code>s"..."</code> 的字符串和形如 <code>s"""..."""</code> 的字符串都无法表示所有的字符串</li></ul></div><p>正确的插入方式：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>val</span> <span class=n>color</span> <span class=k>=</span> <span class=s>&#34;#0000ff&#34;</span>
+</span></span><span class=line><span class=cl><span class=s>s&#34;&#34;&#34;color=&#34;</span><span class=si>$color</span><span class=s>&#34;&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1>// or
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=s>s&#34;color=</span><span class=si>${</span><span class=sc>&#39;&#34;&#39;</span><span class=si>}$color$</span><span class=s>{&#39;&#34;</span><span class=err>&#39;</span><span class=o>}</span><span class=err>&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>以上2个表达式的值均为 <code>color="#0000ff"</code> 。</p><p>当然，还可以用 <code>+</code> 运算符拼接多个字符串（如 <code>"color=\"" + color + "\""</code> ），这种解决方案不在本文的讨论范围内。</p><h2 id=引号导致的其它问题>引号导致的其它问题</h2><p>下面看一个来自 GitHub issue 的例子。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>scala</span><span class=o>&gt;</span> <span class=k>val</span> <span class=n>a</span><span class=o>=</span><span class=s>&#34;42&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>a</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=mi>42</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>scala</span><span class=o>&gt;</span> <span class=s>&#34;a=\&#34;$a\&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>res33</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=n>a</span><span class=o>=</span><span class=s>&#34;$a&#34;</span>    <span class=c1>// ok
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=n>scala</span><span class=o>&gt;</span> <span class=s>s&#34;a=\&#34;</span><span class=si>$a\</span><span class=s>&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s>&lt;console&gt;:1: error: &#39;;&#39; expected but string literal found.
+</span></span></span><span class=line><span class=cl><span class=s>       s&#34;</span><span class=n>a</span><span class=o>=\</span><span class=s>&#34;$a\&#34;&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=o>^</span>         <span class=c1>// oops
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=n>scala</span><span class=o>&gt;</span> <span class=s>s&#34;a=\&#39;</span><span class=si>$a\</span><span class=s>&#39;&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>res34</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=n>a</span><span class=o>=</span><span class=err>&#39;</span><span class=mi>42</span><span class=err>&#39;</span>    <span class=c1>// ok with \&#39;
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=n>scala</span><span class=o>&gt;</span> <span class=s>&#34;&#34;&#34;a=\&#34;$a\&#34;&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>res35</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=n>a</span><span class=o>=\</span><span class=s>&#34;$a\&#34;  // escape not interpreted, ok
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>scala&gt; s&#34;&#34;&#34;</span><span class=n>a</span><span class=o>=\</span><span class=s>&#34;$a\&#34;&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>res36</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=n>a</span><span class=o>=</span><span class=s>&#34;42&#34;</span>    <span class=c1>// escape interpreted, should it ?
+</span></span></span></code></pre></td></tr></table></div></div><p>通过上面的若干用例，我们可以得出结论：</p><ol><li>在不用插值器的时候，<code>\"</code> 可以正常被转换为双引号。</li><li>使用了 <code>s</code> 插值器之后，再使用 <code>\"</code> ，编译器就会报错。</li><li>单引号 <code>\'</code> 可以在插值器中使用。</li><li>在使用 <code>"""</code> 声明的字符串中，可以直接使用 <code>"</code> ， <code>\"</code> 会被识别为2个字符。</li></ol><h2 id=rtfm>RTFM</h2><p>在 <a href=https://docs.scala-lang.org/sips/string-interpolation.html>SIP-11</a> 中， <code>id"string content"</code> 这样的字符串被称为 <em>processed string</em> （准确地说， string content 可以是 standard - <code>"</code> 类型，也可以是 multi-line - <code>"""</code> 类型）。</p><p>按照上面手册中的定义，编译器在遇到</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>id</span><span class=s>&#34;text_0${expr_1}text_1...${expr_n}text_n&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1>// or
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>id</span><span class=s>&#34;&#34;&#34;text_0${expr_1}text_1...${expr_n}text_n&#34;&#34;&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>时，会将其替换为</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=nc>StringContext</span><span class=o>(</span><span class=s>&#34;&#34;&#34;text_0&#34;&#34;&#34;</span><span class=o>,</span> <span class=o>...,</span> <span class=s>&#34;&#34;&#34;text_n&#34;&#34;&#34;</span><span class=o>).</span><span class=n>id</span><span class=o>(</span><span class=n>expr_1</span><span class=o>,</span> <span class=o>...,</span> <span class=n>expr_n</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>SIP-11 中提到：</p><blockquote><p>Inside a processed literal <strong>none</strong> of the usual escape characters are interpreted (except for unicode escapes) no matter whether the string literal is normal (enclosed in single quotes) or multi-line (enclosed in triple quotes). Instead, there is are two new forms of dollar sign escape. The most general form encloses an expression in <code>${</code> and <code>}</code>, i.e. <code>${expr}</code>.</p></blockquote><p>大意是说， processed literal 中除 unicode 转义字符外，其余所有的转义字符都不会被替换。另外，这里的 <code>${</code> 和 <code>}</code> 可以视为新的转义字符。</p><p>SIP-11 在 Standard String Interpolation 一节还提到，字符串插值器 <code>s</code> 返回的字符串为</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// scala.StringContext(&#34;&#34;&#34;text_0&#34;&#34;&#34;, ..., &#34;&#34;&#34;text_n&#34;&#34;&#34;).s(expr_1, ..., expr_n)
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>esc</span><span class=o>(</span><span class=s>&#34;&#34;&#34;text_0&#34;&#34;&#34;</span><span class=o>)</span> <span class=o>+</span> <span class=o>(</span><span class=n>expr_1</span><span class=o>)</span> <span class=o>+</span> <span class=n>esc</span><span class=o>(</span><span class=s>&#34;&#34;&#34;text_1&#34;&#34;&#34;</span><span class=o>)</span> <span class=o>+</span> <span class=o>...</span> <span class=o>+</span> <span class=o>(</span><span class=n>expr_n</span><span class=o>)</span> <span class=o>+</span> <span class=n>esc</span><span class=o>(</span><span class=s>&#34;&#34;&#34;text_n&#34;&#34;&#34;</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>此处的 <code>esc(str)</code> 代表将字符串 <code>str</code> 中的转义字符替换为对应的符号。</p><p>所以，如果 <code>esc</code> 在这里把 <code>\"</code> 替换为 <code>"</code> 的话，替换后的代码中可能出现语法错误，比如</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>val</span> <span class=n>a</span> <span class=k>=</span> <span class=mi>10</span>
+</span></span><span class=line><span class=cl><span class=s>s&#34; \&#34;\&#34;\&#34; </span><span class=si>$a</span><span class=s>&#34;</span> <span class=c1>// expected to be string &#34;&#34;&#34;10
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=c1>// then
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>esc</span><span class=o>(</span><span class=s>&#34;&#34;&#34; \&#34;\&#34;\&#34; &#34;&#34;&#34;</span><span class=o>)</span> <span class=o>+</span> <span class=o>(</span><span class=mi>10</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>// and then
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=s>&#34;&#34;&#34; &#34;&#34;&#34;</span> <span class=s>&#34;&#34;</span><span class=err>&#34;</span> <span class=o>+</span> <span class=mi>10</span>
+</span></span><span class=line><span class=cl><span class=c1>// something bad could happen
+</span></span></span></code></pre></td></tr></table></div></div><p>在手册的定义中， <code>StringContext</code> 接受的字符串不含转义字符，插值器需要自己进行转义字符替换的工作。这样定义的好处是，可以实现一个这样的正则表达式插值器：它不识别转义字符，从而书写正则表达式时不必考虑诸如 <code>'</code> 需要写为 <code>\'</code> 的问题。同时，标准的插值器 <code>s</code> 和 <code>f</code> 等可以正常处理转义字符。</p><h2 id=参考资料>参考资料</h2><ul><li><a href=https://docs.scala-lang.org/sips/string-interpolation.html>SIP 11</a></li><li><a href=https://github.com/scala/bug>scala/bug</a> 仓库里的 <a href=https://github.com/scala/bug/issues/6476>issue#6476</a></li><li>Scala Doc on <a href=https://docs.scala-lang.org/overviews/core/string-interpolation.html>STRING INTERPOLATION</a></li><li>Google Groups 里的会话 <a href=https://groups.google.com/g/scala-sips/c/d2K23f__6b0/discussion>round up the usual escape characters</a></li><li><a href=https://stackoverflow.com/>Stack Overflow</a> 上的提问 <a href=https://stackoverflow.com/questions/21086263/how-to-insert-double-quotes-into-string-with-interpolation-in-scala>How to insert double quotes into String with interpolation in scala</a></li></ul></div><div class=post-copyright><p class=copyright-item><span class=item-title>文章作者</span>
+<span class=item-content>Yike Zhou</span></p><p class=copyright-item><span class=item-title>上次更新</span>
+<span class=item-content>2021-03-19</span></p><p class=copyright-item><span class=item-title>许可协议</span>
+<span class=item-content><a rel=license href=http://creativecommons.org/licenses/by-nc-sa/4.0/><img alt=知识共享许可协议 style=border-width:0 src=https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png></a>&nbsp;<a rel=license href=http://creativecommons.org/licenses/by-nc-sa/4.0/>知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a></span></p></div><footer class=post-footer><div class=post-tags><a href=/zlog/tags/scala/>Scala</a></div><nav class=post-nav><a class=prev href=/zlog/post/chisel-module-as-parameter/><i class="iconfont icon-left"></i>
+<span class="prev-text nav-default">将 Chisel Module 作为类参数</span>
+<span class="prev-text nav-mobile">上一篇</span></a>
+<a class=next href=/zlog/post/lr-parsing-optimization/><span class="next-text nav-default">LR 语法分析器的优化</span>
+<span class="next-text nav-mobile">下一篇</span>
+<i class="iconfont icon-right"></i></a></nav></footer></article></div></div></main><footer id=footer class=footer><div class=social-links><a href=https://github.com/YikeZhou class="iconfont icon-github" title=github></a>
+<a href=https://yikezhou.github.io/zlog/index.xml type=application/rss+xml class="iconfont icon-rss" title=rss></a></div><div class=copyright><span class=power-by>由 <a class=hexo-link href=https://gohugo.io>Hugo</a> 强力驱动</span>
+<span class=division>|</span>
+<span class=theme-info>主题 -
+<a class=theme-link href=https://github.com/olOwOlo/hugo-theme-even>Even</a></span>
+<span class=copyright-year>&copy;
+2020 -
+2022<span class=heart><i class="iconfont icon-heart"></i></span><span>Yike Zhou</span></span></div></footer><div class=back-to-top id=back-to-top><i class="iconfont icon-up"></i></div></div><script src=https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.min.js integrity="sha256-jwCP0NAdCBloaIWTWHmW4i3snUNMHUNO+jr9rYd2iOI=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.locales.min.js integrity="sha256-ZwofwC1Lf/faQCzN7nZtfijVV6hSwxjQMwXL4gn9qU8=" crossorigin=anonymous></script>
+<script>var languageCode="en".replace(/-/g,"_").replace(/_(.*)/,function(e,t){return e.replace(t,t.toUpperCase())});timeago().render(document.querySelectorAll(".timeago"),languageCode),timeago.cancel()</script><script type=text/javascript src=/zlog/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js></script></body></html>

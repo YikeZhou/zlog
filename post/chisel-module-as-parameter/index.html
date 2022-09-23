@@ -1,0 +1,182 @@
+<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><title>将 Chisel Module 作为类参数 - zlog - zyk's blog</title><meta name=renderer content="webkit"><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><meta name=theme-color content="#f8f5ec"><meta name=msapplication-navbutton-color content="#f8f5ec"><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec"><meta name=author content="Yike Zhou"><meta name=description content="在 Chisel 里使用 `Module` 作为生成另一个 `Module` 的参数"><meta name=keywords content="Chisel,Scala"><meta name=generator content="Hugo 0.103.1 with theme even"><link rel=canonical href=https://yikezhou.github.io/zlog/post/chisel-module-as-parameter/><link rel=apple-touch-icon sizes=180x180 href=/zlog/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/zlog/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/zlog/favicon-16x16.png><link rel=manifest href=/zlog/manifest.json><link rel=mask-icon href=/zlog/safari-pinned-tab.svg color=#5bbad5><link href=/zlog/sass/main.min.b874a8796a492f0d7c86bb24c33cbf052935783a5778ebaf819a8e514bf49f10.css rel=stylesheet><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin=anonymous><meta property="og:title" content="将 Chisel Module 作为类参数"><meta property="og:description" content="在 Chisel 里使用 `Module` 作为生成另一个 `Module` 的参数"><meta property="og:type" content="article"><meta property="og:url" content="https://yikezhou.github.io/zlog/post/chisel-module-as-parameter/"><meta property="article:section" content="post"><meta property="article:published_time" content="2021-08-22T12:00:00+08:00"><meta property="article:modified_time" content="2021-08-22T12:00:00+08:00"><meta itemprop=name content="将 Chisel Module 作为类参数"><meta itemprop=description content="在 Chisel 里使用 `Module` 作为生成另一个 `Module` 的参数"><meta itemprop=datePublished content="2021-08-22T12:00:00+08:00"><meta itemprop=dateModified content="2021-08-22T12:00:00+08:00"><meta itemprop=wordCount content="671"><meta itemprop=keywords content="Chisel,Scala,"><meta name=twitter:card content="summary"><meta name=twitter:title content="将 Chisel Module 作为类参数"><meta name=twitter:description content="在 Chisel 里使用 `Module` 作为生成另一个 `Module` 的参数"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]--></head><body><div id=mobile-navbar class=mobile-navbar><div class=mobile-header-logo><a href=/ class=logo>zlog</a></div><div class=mobile-navbar-icon><span></span>
+<span></span>
+<span></span></div></div><nav id=mobile-menu class="mobile-menu slideout-menu"><ul class=mobile-menu-list><a href=/zlog/><li class=mobile-menu-item>Home</li></a><a href=/zlog/post/><li class=mobile-menu-item>Archives</li></a><a href=/zlog/tags/><li class=mobile-menu-item>Tags</li></a><a href=/zlog/categories/><li class=mobile-menu-item>Categories</li></a></ul></nav><div class=container id=mobile-panel><header id=header class=header><div class=logo-wrapper><a href=/ class=logo>zlog</a></div><nav class=site-navbar><ul id=menu class=menu><li class=menu-item><a class=menu-item-link href=/zlog/>Home</a></li><li class=menu-item><a class=menu-item-link href=/zlog/post/>Archives</a></li><li class=menu-item><a class=menu-item-link href=/zlog/tags/>Tags</a></li><li class=menu-item><a class=menu-item-link href=/zlog/categories/>Categories</a></li></ul></nav></header><main id=main class=main><div class=content-wrapper><div id=content class=content><article class=post><header class=post-header><h1 class=post-title>将 Chisel Module 作为类参数</h1><div class=post-meta><span class=post-time>2021-08-22</span><div class=post-category><a href=/zlog/categories/%E7%BC%96%E7%A8%8B/>编程</a></div><span class=more-meta>约 671 字</span>
+<span class=more-meta>预计阅读 2 分钟</span></div></header><div class=post-toc id=post-toc><h2 class=post-toc-title>文章目录</h2><div class=post-toc-content><nav id=TableOfContents><ul><li><ul><li><a href=#使用方法>使用方法</a></li><li><a href=#参考资料>参考资料</a></li></ul></li></ul></nav></div></div><div class=post-outdated><div class=warn><p>【注意】最后更新于 <span class=timeago datetime=2021-08-22T12:00:00 title="August 22, 2021">August 22, 2021</span>，文中内容可能已过时，请谨慎使用。</p></div></div><div class=post-content><h2 id=使用方法>使用方法</h2><p>现在我们的需求是：在同一个 Generator 里可以使用端口定义相同、内部实现不同的子模块，且子模块可以通过参数进行配置。</p><p>首先定义一个特质 <code>MyAdder</code>，它可以理解为 <code>Mod1</code> 和 <code>Mod2</code> 两个 <code>Module</code> 的接口定义。
+<code>Mod1</code> 和 <code>Mod2</code> 是两个接口相同、功能不同的模块。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Provides a more specific interface since generic Module
+</span></span></span><span class=line><span class=cl><span class=c1>// provides no compile-time information on generic module&#39;s IOs.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>trait</span> <span class=nc>MyAdder</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=n>in1</span><span class=k>:</span> <span class=kt>UInt</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=n>in2</span><span class=k>:</span> <span class=kt>UInt</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=n>out</span><span class=k>:</span> <span class=kt>UInt</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Mod1</span> <span class=k>extends</span> <span class=nc>RawModule</span> <span class=k>with</span> <span class=nc>MyAdder</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>in1</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=nc>Input</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>in2</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=nc>Input</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>out</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=nc>Output</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=n>out</span> <span class=k>:</span><span class=o>=</span> <span class=n>in1</span> <span class=o>+</span> <span class=n>in2</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>Mod2</span> <span class=k>extends</span> <span class=nc>RawModule</span> <span class=k>with</span> <span class=nc>MyAdder</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>in1</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=nc>Input</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>in2</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=nc>Input</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>out</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=nc>Output</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>    <span class=n>out</span> <span class=k>:</span><span class=o>=</span> <span class=n>in1</span> <span class=o>-</span> <span class=n>in2</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>类 <code>X</code> 接收一个实现了 <code>MyAdder</code> 特质的对象作为参数。<code>: =></code> 表示参数会延迟求值。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>class</span> <span class=nc>X</span><span class=o>[</span><span class=kt>T</span> <span class=k>&lt;:</span> <span class=kt>BaseModule</span> <span class=kt>with</span> <span class=kt>MyAdder</span><span class=o>](</span><span class=n>genT</span><span class=k>:</span> <span class=o>=&gt;</span> <span class=n>T</span><span class=o>)</span> <span class=k>extends</span> <span class=nc>Module</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>io</span> <span class=k>=</span> <span class=nc>IO</span><span class=o>(</span><span class=k>new</span> <span class=nc>Bundle</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>val</span> <span class=n>in1</span> <span class=k>=</span> <span class=nc>Input</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=k>val</span> <span class=n>in2</span> <span class=k>=</span> <span class=nc>Input</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=k>val</span> <span class=n>out</span> <span class=k>=</span> <span class=nc>Output</span><span class=o>(</span><span class=nc>UInt</span><span class=o>(</span><span class=mf>8.</span><span class=n>W</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>})</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>subMod</span> <span class=k>=</span> <span class=nc>Module</span><span class=o>(</span><span class=n>genT</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>io</span><span class=o>.</span><span class=n>out</span> <span class=k>:</span><span class=o>=</span> <span class=n>subMod</span><span class=o>.</span><span class=n>out</span>
+</span></span><span class=line><span class=cl>    <span class=n>subMod</span><span class=o>.</span><span class=n>in1</span> <span class=k>:</span><span class=o>=</span> <span class=n>io</span><span class=o>.</span><span class=n>in1</span>
+</span></span><span class=line><span class=cl>    <span class=n>subMod</span><span class=o>.</span><span class=n>in2</span> <span class=k>:</span><span class=o>=</span> <span class=n>io</span><span class=o>.</span><span class=n>in2</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>生成对应 Verilog 代码，并进行比较。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>println</span><span class=o>(</span><span class=nc>ChiselStage</span><span class=o>.</span><span class=n>emitVerilog</span><span class=o>(</span><span class=k>new</span> <span class=n>X</span><span class=o>(</span><span class=k>new</span> <span class=nc>Mod1</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl><span class=n>println</span><span class=o>(</span><span class=nc>ChiselStage</span><span class=o>.</span><span class=n>emitVerilog</span><span class=o>(</span><span class=k>new</span> <span class=n>X</span><span class=o>(</span><span class=k>new</span> <span class=nc>Mod2</span><span class=o>)))</span>
+</span></span></code></pre></td></tr></table></div></div><p>当类参数 <code>genT = Mod1</code> 时，生成了 <code>X</code> 和 <code>Mod1</code> 两个模块，并且在 <code>X</code> 中实例化了 <code>Mod1</code> 模块。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-verilog data-lang=verilog><span class=line><span class=cl><span class=k>module</span> <span class=n>Mod1</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>  <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>in1</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>  <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>in2</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>output</span> <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>out</span>
+</span></span><span class=line><span class=cl><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>assign</span> <span class=n>out</span> <span class=o>=</span> <span class=n>in1</span> <span class=o>+</span> <span class=n>in2</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 174:16]
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>endmodule</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>module</span> <span class=n>X</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>        <span class=n>clock</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>        <span class=n>reset</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>  <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>io_in1</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>  <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>io_in2</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>output</span> <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>io_out</span>
+</span></span><span class=line><span class=cl><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=kt>wire</span> <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>subMod_in1</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 192:24]
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=kt>wire</span> <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>subMod_in2</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 192:24]
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=kt>wire</span> <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>subMod_out</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 192:24]
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=n>Mod1</span> <span class=n>subMod</span> <span class=p>(</span> <span class=c1>// @[polymorphism-and-parameterization.md 192:24]
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>.</span><span class=n>in1</span><span class=p>(</span><span class=n>subMod_in1</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=p>.</span><span class=n>in2</span><span class=p>(</span><span class=n>subMod_in2</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=p>.</span><span class=n>out</span><span class=p>(</span><span class=n>subMod_out</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>assign</span> <span class=n>io_out</span> <span class=o>=</span> <span class=n>subMod_out</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 193:12]
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>assign</span> <span class=n>subMod_in1</span> <span class=o>=</span> <span class=n>io_in1</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 194:16]
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>assign</span> <span class=n>subMod_in2</span> <span class=o>=</span> <span class=n>io_in2</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 195:16]
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>endmodule</span>
+</span></span></code></pre></td></tr></table></div></div><p>当类参数 <code>genT = Mod2</code> 时，<code>X</code> 中的子模块变成了 <code>Mod2</code>（此处省略了重复的代码）。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-verilog data-lang=verilog><span class=line><span class=cl><span class=k>module</span> <span class=n>Mod2</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>  <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>in1</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>input</span>  <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>in2</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=k>output</span> <span class=p>[</span><span class=mh>7</span><span class=o>:</span><span class=mh>0</span><span class=p>]</span> <span class=n>out</span>
+</span></span><span class=line><span class=cl><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>assign</span> <span class=n>out</span> <span class=o>=</span> <span class=n>in1</span> <span class=o>-</span> <span class=n>in2</span><span class=p>;</span> <span class=c1>// @[polymorphism-and-parameterization.md 182:16]
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>endmodule</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>module</span> <span class=n>X</span><span class=p>(</span><span class=cm>/*...*/</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/*...*/</span>
+</span></span><span class=line><span class=cl>  <span class=n>Mod2</span> <span class=n>subMod</span> <span class=p>(</span> <span class=c1>// @[polymorphism-and-parameterization.md 192:24]
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>.</span><span class=n>in1</span><span class=p>(</span><span class=n>subMod_in1</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=p>.</span><span class=n>in2</span><span class=p>(</span><span class=n>subMod_in2</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=p>.</span><span class=n>out</span><span class=p>(</span><span class=n>subMod_out</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=cm>/*...*/</span>
+</span></span><span class=line><span class=cl><span class=k>endmodule</span>
+</span></span></code></pre></td></tr></table></div></div><div class="admonition note"><p class=admonition-title>更多</p><ul><li><code>RawModule</code> / <code>BaseModule</code> / <code>Module</code> 中：<code>RawModule</code> 没有隐式 <code>clock</code> 和 <code>reset</code> 端口；<code>BaseModule</code> 是其它 <code>Module</code> 的<strong>抽象基类</strong>（abstract base class）；<code>Module</code> 是定义一个模块时通常会使用的类。</li><li><code>MultiIOModule</code> 比起 <code>RawModule</code> 多了隐式 <code>clock</code> 和 <code>reset</code> 端口。</li></ul></div><h2 id=参考资料>参考资料</h2><ul><li>Chisel/FIRRTL Doc: <a href=https://www.chisel-lang.org/chisel3/docs/explanations/polymorphism-and-parameterization.html#parametrization-based-on-modules>Parametrization based on Modules</a></li><li>Module.scala: <a href=https://github.com/chipsalliance/chisel3/blob/v3.4.3/core/src/main/scala/chisel3/Module.scala>https://github.com/chipsalliance/chisel3/blob/v3.4.3/core/src/main/scala/chisel3/Module.scala</a></li><li>RawModule.scala: <a href=https://github.com/chipsalliance/chisel3/blob/v3.4.3/core/src/main/scala/chisel3/RawModule.scala>https://github.com/chipsalliance/chisel3/blob/v3.4.3/core/src/main/scala/chisel3/RawModule.scala</a></li></ul></div><div class=post-copyright><p class=copyright-item><span class=item-title>文章作者</span>
+<span class=item-content>Yike Zhou</span></p><p class=copyright-item><span class=item-title>上次更新</span>
+<span class=item-content>2021-08-22</span></p></div><footer class=post-footer><div class=post-tags><a href=/zlog/tags/chisel/>Chisel</a>
+<a href=/zlog/tags/scala/>Scala</a></div><nav class=post-nav><a class=prev href=/zlog/post/useful-pacman-commands/><i class="iconfont icon-left"></i>
+<span class="prev-text nav-default">Pacman 常用命令</span>
+<span class="prev-text nav-mobile">上一篇</span></a>
+<a class=next href=/zlog/post/scala-double-quote-inside-an-interpolated-string/><span class="next-text nav-default">Scala 字符串插值器不支持转义双引号</span>
+<span class="next-text nav-mobile">下一篇</span>
+<i class="iconfont icon-right"></i></a></nav></footer></article></div></div></main><footer id=footer class=footer><div class=social-links><a href=https://github.com/YikeZhou class="iconfont icon-github" title=github></a>
+<a href=https://yikezhou.github.io/zlog/index.xml type=application/rss+xml class="iconfont icon-rss" title=rss></a></div><div class=copyright><span class=power-by>由 <a class=hexo-link href=https://gohugo.io>Hugo</a> 强力驱动</span>
+<span class=division>|</span>
+<span class=theme-info>主题 -
+<a class=theme-link href=https://github.com/olOwOlo/hugo-theme-even>Even</a></span>
+<span class=copyright-year>&copy;
+2020 -
+2022<span class=heart><i class="iconfont icon-heart"></i></span><span>Yike Zhou</span></span></div></footer><div class=back-to-top id=back-to-top><i class="iconfont icon-up"></i></div></div><script src=https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.min.js integrity="sha256-jwCP0NAdCBloaIWTWHmW4i3snUNMHUNO+jr9rYd2iOI=" crossorigin=anonymous></script>
+<script src=https://cdn.jsdelivr.net/npm/timeago.js@3.0.2/dist/timeago.locales.min.js integrity="sha256-ZwofwC1Lf/faQCzN7nZtfijVV6hSwxjQMwXL4gn9qU8=" crossorigin=anonymous></script>
+<script>var languageCode="en".replace(/-/g,"_").replace(/_(.*)/,function(e,t){return e.replace(t,t.toUpperCase())});timeago().render(document.querySelectorAll(".timeago"),languageCode),timeago.cancel()</script><script type=text/javascript src=/zlog/js/main.min.4ae89da218555efa0e7093a20b92017d2e1202b66fff9fc2edf4cb8d44b44c6e.js></script></body></html>
