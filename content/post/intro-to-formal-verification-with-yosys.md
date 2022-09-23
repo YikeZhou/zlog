@@ -2,7 +2,7 @@
 title: "基于 Yosys 的形式化验证入门"
 date: 2022-09-15T10:46:29+08:00
 lastmod: 2022-09-16T10:00:00+08:00
-draft: true
+draft: false
 keywords: ["Yosys"]
 description: "使用 Yosys/SymbiYosys 进行形式化验证的实例"
 tags: ["Yosys", "形式化验证"]
