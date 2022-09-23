@@ -14,7 +14,6 @@ author: "Yike Zhou"
 comment: false
 toc: true
 autoCollapseToc: true
-postMetaInFooter: false
 
 mathjax: true
 mathjaxEnableSingleDollar: true
