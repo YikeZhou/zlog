@@ -67,3 +67,39 @@ Python Image 太大了，希望能尽量小一些，方便上传到服务器上�
 1. 系统本身可能有自带的 Python，与手动安装的版本不同。这时 pip 可能也有多个版本，默认在不同的地方安装第三方库，需要格外注意。
 2. 运行 gdb 时提示 `Operation not permitted` 可能是因为没有打开 `--cap-add=SYS_PTRACE` 或者使用 `sudo`。
 {{% /admonition %}}
+
+
+## Linux
+
+{{% admonition info "cgroup change of group failed" %}}
+因为电脑性能有限，所以希望用 cgroup 来限制某进程及其子进程占用的资源。看了各种教程，每到用 cgexec 运行新进程这一步就会报错。Google 了各种别人的回答，下面是两个最有用的：
+- [Andy Pan's Answer to *How to run cgexec without sudo as current user on Ubuntu 22.04 with cgroups v2, failing with "cgroup change of group failed"?*](https://askubuntu.com/a/1450845)
+- [Mike N.'s Answer to *Using cgroups v2 without root*](https://unix.stackexchange.com/a/741631)
+
+按照 [Linux Kernel Docs](https://docs.kernel.org/admin-guide/cgroup-v2.html#delegation-containment) 里面所写：
+
+> The writer must have write access to the "cgroup.procs" file of the common ancestor of the source and destination cgroups.
+
+我们需要找到这个公共祖先，再看它对应的目录下 cgroup.procs 文件是否有写权限。
+
+1. 通过 `cat /proc/self/cgroup` 命令找到当前 Shell 进程的 cgroup：user.slice/**user-1000.slice**/session-1.scope；
+2. 已知创建的新 cgroup 放在 user.slice/**user-1000.slice**/user\@1000.service/app.slice/ 中。
+
+二者的公共祖先是 **user-1000.slice**，使用 `ls -l /sys/fs/cgroup/user.slice/user-1000.slice/cgroup.procs` 确认权限。
+```
+-rw-r--r-- 1 root root ... (omitted)
+```
+
+确实是普通用户没有写权限造成的问题，所以可以用上面回答中给出的方法，手动修改权限。
+```
+# chmod o+w /sys/fs/cgroup/user.slice/user-1000.slice/cgroup.procs
+```
+
+虽然问题解决了，但是让人奇怪的是，为什么 user-1000.slice/ 里面的 cgroup.procs 文件所有者不是 uid=1000 的普通用户，而它的子目录 user\@1000.service/ 与 app.slice/ 中的此文件所有者又是 uid=1000 的普通用户？
+
+**其它有用的页面**：
+- [cgroups - ArchWiki](https://wiki.archlinux.org/title/cgroups)
+- [Ubuntu Manpage: cgconfig.conf - libcgroup configuration file](https://manpages.ubuntu.com/manpages/jammy/en/man5/cgconfig.conf.5.html)
+- [Resource Management Guide Red Hat Enterprise Linux 6 | Red Hat Customer Portal](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/resource_management_guide/index)
+- [Control Group v2 — The Linux Kernel documentation](https://docs.kernel.org/admin-guide/cgroup-v2.html)
+{{% /admonition %}}
