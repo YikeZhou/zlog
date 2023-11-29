@@ -68,6 +68,14 @@ Python Image 太大了，希望能尽量小一些，方便上传到服务器上�
 2. 运行 gdb 时提示 `Operation not permitted` 可能是因为没有打开 `--cap-add=SYS_PTRACE` 或者使用 `sudo`。
 {{% /admonition %}}
 
+{{% admonition question "search() vs. match()" %}}
+其实[手册里](https://docs.python.org/3/library/re.html#search-vs-match)讲得很清楚了，但是用了这么久竟然一直都不知道。简而言之：
+- `match()` 是从字符串**开头**匹配；
+- `search()` 可以从任意位置开始；
+- `fullmatch()` 是检查整个字符串是否匹配。
+
+因此，`match()` 成功可能是匹配上了字符串的前半部分，使用时要注意。
+{{% /admonition %}}
 
 ## Linux
 
