@@ -1,7 +1,7 @@
 ---
-title: "2023 年踩过的那些坑（未完待续）"
+title: "2023 年踩过的那些坑"
 date: 2023-06-17T13:43:00+08:00
-lastmod: 2023-10-13T18:00:00+08:00
+lastmod: 2025-04-18T18:00:00+08:00
 draft: false
 keywords: ["Troubleshooting", "Linux", "Python", "Docker", "WSL"]
 description: "各种各样的问题及其解决方案记录"
